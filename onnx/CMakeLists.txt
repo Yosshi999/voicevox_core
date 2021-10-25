@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.17)
 
 project(ONNXCore)
 set(ENABLE_CUDA OFF CACHE BOOL "use CUDA")
@@ -42,8 +42,12 @@ target_link_libraries(core PUBLIC onnxruntime)
 # GCC 9.0以前ではstd::filesystemを使うためにリンクが必要 (https://gitlab.kitware.com/cmake/cmake/-/issues/17834)
 target_link_libraries(core PRIVATE $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,9.0>>:stdc++fs>)
 
-# core.cpp内にUSE_CUDAをdefineする
+# CUDAを有効化したときの設定
 if(ENABLE_CUDA)
+	find_package(CUDAToolkit REQUIRED)
+	target_include_directories(core PRIVATE CUDAToolkit_INCLUDE_DIRS)
+	target_link_libraries(core PRIVATE CUDA::cudart)
+	# core.cpp内にUSE_CUDAをdefineする
 	target_compile_definitions(core PRIVATE USE_CUDA)
 endif(ENABLE_CUDA)
 
