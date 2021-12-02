@@ -13,9 +13,6 @@ cpdef initialize(
     )
     if not success: raise Exception(c_last_error_message().decode())
 
-cpdef finalize():
-    c_finalize()
-
 cpdef metas():
     return c_metas().decode()
 
