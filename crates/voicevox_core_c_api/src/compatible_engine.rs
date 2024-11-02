@@ -358,7 +358,7 @@ pub extern "C" fn generate_full_intermediate(
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn render_partial_audio_segment(
+pub extern "C" fn render_audio_segment(
     length: i64,
     audio_feature_size: i64,
     audio_feature: *mut f32,
