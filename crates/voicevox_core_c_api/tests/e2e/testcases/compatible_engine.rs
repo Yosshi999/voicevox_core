@@ -138,7 +138,9 @@ impl assert_cdylib::TestCase for TestCase {
                     &mut { EXAMPLE_DATA.speaker_id } as *mut i64,
                     wave_segment.as_mut_ptr(),
                 ));
-                wave[render_start * 256..render_end * 256].clone_from_slice(&wave_segment);
+                wave[render_start * 256..render_end * 256].clone_from_slice(
+                    &wave_segment[left_margin * 256..wave_segment.len() - right_margin * 256],
+                );
             }
             wave
         };
