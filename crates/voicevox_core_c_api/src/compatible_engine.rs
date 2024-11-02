@@ -319,3 +319,73 @@ pub extern "C" fn decode_forward(
         }
     }
 }
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
+pub extern "C" fn generate_full_intermediate(
+    length: i64,
+    phoneme_size: i64,
+    audio_feature_size: i64,
+    f0: *mut f32,
+    phoneme: *mut f32,
+    speaker_id: *mut i64,
+    output: *mut f32,
+) -> bool {
+    init_logger_once();
+    let length = length as usize;
+    let phoneme_size = phoneme_size as usize;
+    let audio_feature_size = audio_feature_size as usize;
+    let synthesizer = &*lock_synthesizer();
+    let result = ensure_initialized!(synthesizer).generate_full_intermediate(
+        length,
+        phoneme_size,
+        unsafe { std::slice::from_raw_parts(f0, length) },
+        unsafe { std::slice::from_raw_parts(phoneme, phoneme_size * length) },
+        StyleId::new(unsafe { *speaker_id as u32 }),
+    );
+    match result {
+        Ok(output_ndarr) => {
+            let output_slice =
+                unsafe { std::slice::from_raw_parts_mut(output, audio_feature_size * length) };
+            output_slice.clone_from_slice(&output_ndarr.into_raw_vec());
+            true
+        }
+        Err(err) => {
+            set_message(&format!("{err}"));
+            false
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn render_partial_audio_segment(
+    length: i64,
+    audio_feature_size: i64,
+    audio_feature: *mut f32,
+    speaker_id: *mut i64,
+    output: *mut f32,
+) -> bool {
+    init_logger_once();
+    let length = length as usize;
+    let audio_feature_size = audio_feature_size as usize;
+    let synthesizer = &*lock_synthesizer();
+    let audio_feature_vec =
+        unsafe { std::slice::from_raw_parts(audio_feature, audio_feature_size * length) };
+    let result = ensure_initialized!(synthesizer).render_audio_segment(
+        ndarray::arr1(audio_feature_vec)
+            .into_shape([length, audio_feature_size])
+            .unwrap(),
+        StyleId::new(unsafe { *speaker_id as u32 }),
+    );
+    match result {
+        Ok(output_ndarr) => {
+            let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length * 256) };
+            output_slice.clone_from_slice(&output_ndarr.into_raw_vec());
+            true
+        }
+        Err(err) => {
+            set_message(&format!("{err}"));
+            false
+        }
+    }
+}
